@@ -188,6 +188,15 @@ export default {
       graph: [],
     };
   },
+
+  created() {
+    const tickersData = localStorage.getItem("crypto-list");
+
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+    }
+  },
+
   methods: {
     add() {
       const currentTicker = { name: this.ticker, price: "-" };
@@ -204,6 +213,8 @@ export default {
           this.graph.push(data.USD);
         }
       }, 3000);
+
+      localStorage.setItem("crypto-list", JSON.stringify(this.tickers));
 
       this.ticker = "";
     },
