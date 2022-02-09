@@ -90,9 +90,24 @@
       </section>
       <template v-if="tickers.length">
         <hr class="w-full border-t border-gray-600 my-4" />
+        <div>
+          <button
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Назад
+          </button>
+          <button
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            disabled
+          >
+            Вперед
+          </button>
+          <div>Фильтр <input v-model="filter" /></div>
+        </div>
+        <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in tickers"
+            v-for="t in filteredList()"
             :key="t.name"
             @click="select(t)"
             :class="{
@@ -186,6 +201,8 @@ export default {
       tickers: [],
       sel: null,
       graph: [],
+      page: 1,
+      filter: "",
     };
   },
 
@@ -194,25 +211,37 @@ export default {
 
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
+      this.tickers.forEach((ticker) => {
+        this.subscribeToUpdates(ticker);
+      });
     }
   },
 
   methods: {
-    add() {
-      const currentTicker = { name: this.ticker, price: "-" };
-      this.tickers.push(currentTicker);
+    filteredList() {
+      return this.tickers.filter((ticker) => ticker.name.includes(this.filter));
+    },
+
+    subscribeToUpdates(ticker) {
       setInterval(async () => {
         const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=d0a99de5f829be9b702a7681cc4cb90b4829b7d42fa5f626b104afed88aec7f1`
+          `https://min-api.cryptocompare.com/data/price?fsym=${ticker.name}&tsyms=USD&api_key=d0a99de5f829be9b702a7681cc4cb90b4829b7d42fa5f626b104afed88aec7f1`
         );
         const data = await f.json();
-        currentTicker.price =
+        ticker.price =
           data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
 
-        if (this.sel?.name === currentTicker.name) {
+        if (this.sel?.name === ticker.name) {
           this.graph.push(data.USD);
         }
       }, 3000);
+    },
+
+    add() {
+      const currentTicker = { name: this.ticker, price: "-" };
+      this.tickers.push(currentTicker);
+
+      this.subscribeToUpdates(currentTicker);
 
       localStorage.setItem("crypto-list", JSON.stringify(this.tickers));
 
