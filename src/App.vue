@@ -193,7 +193,7 @@
 </template>
 
 <script>
-import { loadTickers } from "./api";
+import { subscribeToTicker, unsubscribeFromTicker } from "./api";
 export default {
   name: "App",
 
@@ -224,6 +224,12 @@ export default {
 
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
+      this.tickers.forEach((ticker) => {
+        subscribeToTicker(ticker.name, () => {
+          // this.updateTicker(ticker.name, newPrice);
+          console.log("123");
+        });
+      });
     }
 
     setInterval(() => {
@@ -273,6 +279,14 @@ export default {
   },
 
   methods: {
+    updateTicker(tickerName, price) {
+      this.tickers
+        .filter((t) => t.name === tickerName)
+        .forEach((t) => {
+          t.price = price;
+          console.log(t.price);
+        });
+    },
     formatPrice(price) {
       if (price === "-") {
         return price;
@@ -281,21 +295,26 @@ export default {
     },
 
     async updateTickers() {
-      if (!this.tickers.length) {
-        return;
-      }
-      const exchangeData = await loadTickers(this.tickers.map((t) => t.name));
-      this.tickers.forEach((ticker) => {
-        const price = exchangeData[ticker.name.toUpperCase()];
-        ticker.price = price ?? "-";
-      });
+      // if (!this.tickers.length) {
+      //   return;
+      // }
+      // const exchangeData = await loadTickers(this.tickers.map((t) => t.name));
+      // this.tickers.forEach((ticker) => {
+      //   const price = exchangeData[ticker.name.toUpperCase()];
+      //   ticker.price = price ?? "-";
+      // });
     },
 
     add() {
       const currentTicker = { name: this.ticker, price: "-" };
-
       this.tickers = [...this.tickers, currentTicker];
+      this.ticker = "";
       this.filter = "";
+      console.log(subscribeToTicker);
+
+      subscribeToTicker(currentTicker.name, (newPrice) => {
+        this.updateTicker(currentTicker.name, newPrice);
+      });
     },
     handleDelete(tickerToRemove) {
       this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
@@ -303,6 +322,7 @@ export default {
       if (this.selectedTicker === tickerToRemove) {
         this.selectedTicker = null;
       }
+      unsubscribeFromTicker(tickerToRemove.name);
     },
 
     select(ticker) {
