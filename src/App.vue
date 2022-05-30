@@ -358,6 +358,9 @@ export default {
 
     select(ticker) {
       this.selectedTicker = ticker;
+      this.$nextTick(() => {
+        this.calculateMaxGraphElements();
+      });
     },
   },
   watch: {
